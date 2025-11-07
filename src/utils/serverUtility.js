@@ -1,4 +1,3 @@
-import prisma from "../db/index.js"
 import figlet from "figlet";
 import { serverConfig } from "../config/env.js";
 
