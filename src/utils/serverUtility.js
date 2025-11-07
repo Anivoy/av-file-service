@@ -13,35 +13,6 @@ export function displayBanner() {
   console.log(`Service Template v1.0.0 [${serverConfig.MODE}]\n`);
 };
 
-export async function testDatabaseConnection(maxRetries = 5, retryDelay = 3000) {
-  let attempt = 0;
-
-  while (attempt < maxRetries) {
-    try {
-      attempt++;
-      console.log(`Database connection attempt ${attempt}/${maxRetries}`);
-
-      await prisma.$connect();
-      await prisma.$queryRaw`SELECT 1`;
-
-      console.log('Database connected');
-      return true;
-    } catch (error) {
-      console.log(`Database connection failed: ${error.message}`);
-
-      if (attempt < maxRetries) {
-        console.log(`Retrying in ${retryDelay / 1000} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
-      } else {
-        console.log('Max retry attempts reached');
-        process.exit(1);
-      }
-    }
-  }
-
-  return false;
-};
-
 export async function gracefulShutdown(server) {
   console.log('\nShutdown signal received');
   console.log('Closing server...');
