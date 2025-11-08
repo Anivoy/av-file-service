@@ -1,6 +1,6 @@
 import app from "./app.js";
 import { serverConfig } from "./config/env.js";
-import { displayBanner } from "./utils/serverUtility.js";
+import { displayBanner, gracefulShutdown } from "./utils/serverUtility.js";
 
 const startServer = async () => {
   try {

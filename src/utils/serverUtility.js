@@ -9,7 +9,7 @@ export function displayBanner() {
   });
 
   console.log('\n' + banner);
-  console.log(`Service Template v1.0.0 [${serverConfig.MODE}]\n`);
+  console.log(`File Service v1.0.0 [${serverConfig.MODE}]\n`);
 };
 
 export async function gracefulShutdown(server) {
@@ -18,14 +18,6 @@ export async function gracefulShutdown(server) {
 
   server.close(async () => {
     console.log('Server closed');
-    console.log('Disconnecting database...');
-
-    try {
-      await prisma.$disconnect();
-      console.log('Database disconnected');
-    } catch (error) {
-      console.log(`Error disconnecting database: ${error.message}`);
-    }
 
     console.log('Goodbye\n');
     process.exit(0);

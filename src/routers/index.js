@@ -1,5 +1,5 @@
 import express from "express";
-import serverUtilityRoutes from "./serverUtility.js";
+import serverUtilityRoutes from "./utility.route.js";
 
 const router = express.Router();
 
