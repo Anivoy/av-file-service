@@ -10,7 +10,7 @@ export const errorHandler = (err, req, res, next) => {
     statusCode = 400;
     message = 'Validation error';
     console.log({ err });
-    details = err.map((e) => ({
+    details = err.issues.map((e) => ({
       field: e.path.join('.'),
       message: e.message,
     }));

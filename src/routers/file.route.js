@@ -1,24 +1,23 @@
 import express from 'express';
-import multer from 'multer';
-import * as fileController from '../controllers/file.controller.js';
+import {
+  getFile,
+  getFiles,
+  remove,
+  upload,
+  uploadMultiple,
+} from '../controllers/file.controller.js';
+import { uploadFile, uploadFiles, handleMulterError } from '../middleware/multer.middleware.js';
 
 const router = express.Router();
 
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB limit
-  }
-});
+router.get('/', getFile);
 
-router.get('/', fileController.getFile);
+router.post('/', getFiles);
 
-router.post('/list', fileController.getFiles);
+router.post('/upload', uploadFile, handleMulterError, upload);
 
-router.post('/upload', upload.single('file'), fileController.upload);
+router.post('/uploads', uploadFiles, handleMulterError, uploadMultiple);
 
-router.post('/uploads', upload.array('files', 10), fileController.uploadMultiple);
-
-router.delete('/', fileController.remove);
+router.delete('/', remove);
 
 export default router;

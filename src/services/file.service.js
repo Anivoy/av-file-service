@@ -1,10 +1,9 @@
 import path from 'path';
 import { minioClient, externalMinioClient } from '../config/minio.js';
 import { minioConfig as config } from '../config/env.js';
+import { Readable } from 'stream';
 
 import { AppError } from '../utils/errorUtility.js';
-
-const bucket = config.BUCKET;
 
 const sanitizePath = (objectPath) => {
   if (!objectPath || typeof objectPath !== 'string') {
@@ -23,10 +22,17 @@ const sanitizePath = (objectPath) => {
   return parts.join('/');
 };
 
-export const uploadFile = async (file, destination = '', signed = false) => {
+export const uploadFile = async (
+  file,
+  destination = '',
+  isPublic = false,
+  signed = false,
+) => {
   if (!file || !file.buffer) {
     throw new AppError('Invalid file object', 400);
   }
+
+  const bucket = isPublic ? config.PUBLIC_BUCKET : config.PRIVATE_BUCKET;
 
   const sanitizedDestination = sanitizePath(destination);
   const objectPath = sanitizedDestination
@@ -41,35 +47,51 @@ export const uploadFile = async (file, destination = '', signed = false) => {
   const stream = Readable.from(file.buffer);
   await minioClient.putObject(bucket, objectPath, stream, file.size, metaData);
 
-  const url = await getFileUrl(objectPath, signed);
+  const url = await getFileUrl(objectPath, isPublic, signed);
 
   return {
     originalName: file.originalname,
     path: objectPath,
     url,
+    bucket,
+    isPublic,
   };
 };
 
-export const uploadFiles = async (files, destination = '', signed = false) => {
+export const uploadFiles = async (
+  files,
+  destination = '',
+  isPublic = false,
+  signed = false,
+) => {
   if (!Array.isArray(files) || files.length === 0) {
     throw new AppError('No files provided for upload', 400);
   }
 
-  return Promise.all(files.map((file) => uploadFile(file, destination, signed)));
+  return Promise.all(
+    files.map((file) => uploadFile(file, destination, isPublic, signed)),
+  );
 };
 
-export const getFileUrl = async (objectPath, signed = false) => {
+export const getFileUrl = async (objectPath, isPublic = false, signed = false) => {
   const sanitizedPath = sanitizePath(objectPath);
-
   if (!sanitizedPath) {
     throw new Error('Invalid object path');
+  }
+
+  const bucket = isPublic ? config.PUBLIC_BUCKET : config.PRIVATE_BUCKET;
+
+  if (isPublic) {
+    const encodedPath = sanitizedPath.split('/').map(encodeURIComponent).join('/');
+    const baseUrl = config.PUBLIC_BASE_URL.replace(/\/+$/, '');
+    return `${baseUrl}/${bucket}/${encodedPath}`;
   }
 
   if (signed) {
     return await externalMinioClient.presignedGetObject(
       bucket,
       sanitizedPath,
-      24 * 60 * 60,
+      12 * 60 * 60,
     );
   }
 
@@ -79,19 +101,25 @@ export const getFileUrl = async (objectPath, signed = false) => {
   return `${baseUrl}/${bucket}/${encodedPath}`;
 };
 
-export const getFilesUrl = async (paths, signed = false) => {
+export const getFilesUrl = async (paths, isPublic = false, signed = false) => {
   if (!Array.isArray(paths) || paths.length === 0) {
     throw new AppError('No paths provided', 400);
   }
 
   const promises = paths.map(async (p) => ({
     path: sanitizePath(p),
-    url: await getFileUrl(p, signed),
+    url: await getFileUrl(p, isPublic, signed),
   }));
   return Promise.all(promises);
 };
 
-export const deleteFiles = async (paths) => {
+export const deleteFiles = async (paths, isPublic = false) => {
+  if (!Array.isArray(paths) || paths.length === 0) {
+    throw new AppError('No paths provided', 400);
+  }
+  
+  const bucket = isPublic ? config.PUBLIC_BUCKET : config.PRIVATE_BUCKET;
+
   const sanitizedPaths = paths.map(sanitizePath).filter(Boolean);
 
   if (sanitizedPaths.length === 0) {

@@ -1,10 +1,13 @@
 import app from "./app.js";
 import { serverConfig } from "./config/env.js";
+import { initializeMinioBuckets } from "./config/minio.js";
 import { displayBanner, gracefulShutdown } from "./utils/serverUtility.js";
 
 const startServer = async () => {
   try {
     displayBanner();
+
+    await initializeMinioBuckets();
 
     const server = app.listen(serverConfig.PORT, () => {
       console.log(`Server running on port ${serverConfig.PORT}\n`);

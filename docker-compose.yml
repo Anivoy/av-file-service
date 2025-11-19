@@ -5,7 +5,7 @@ networks:
     external: true
 
 services:
-  service-name:
+  file:
     build:
       context: .
       target: development
@@ -19,3 +19,24 @@ services:
     restart: unless-stopped
     networks:
       - anivoy-shared-net
+
+  minio:
+    image: minio/minio
+    container_name: anivoy-minio-s3
+    env_file:
+      - .env
+    ports:
+      - "${MINIO_HOST_PORT:-9000}:9000"  # Use env var, default 9000
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    volumes:
+      - minio-data:/data
+    networks:
+      - anivoy-shared-net
+
+volumes:
+  minio-data:

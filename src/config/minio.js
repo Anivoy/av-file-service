@@ -17,14 +17,41 @@ export const externalMinioClient = new Client({
   secretKey: config.SECRET_KEY,
 });
 
-(async () => {
+const publicReadPolicy = (bucket) => ({
+  Version: '2012-10-17',
+  Statement: [
+    {
+      Effect: 'Allow',
+      Principal: { AWS: ['*'] },
+      Action: ['s3:GetObject'],
+      Resource: [`arn:aws:s3:::${bucket}/*`],
+    },
+  ],
+});
+
+export async function initializeMinioBuckets() {
   try {
-    const exists = await minioClient.bucketExists(config.BUCKET);
-    if (!exists) {
-      await minioClient.makeBucket(config.BUCKET);
-      console.log(`Created bucket: ${config.BUCKET}`);
+    console.log("Initializing MinIO buckets");
+    const privateExists = await minioClient.bucketExists(config.PRIVATE_BUCKET);
+    if (!privateExists) {
+      await minioClient.makeBucket(config.PRIVATE_BUCKET);
+      console.log(`Created private bucket: ${config.PRIVATE_BUCKET}`);
     }
+
+    const publicExists = await minioClient.bucketExists(config.PUBLIC_BUCKET);
+    if (!publicExists) {
+      await minioClient.makeBucket(config.PUBLIC_BUCKET);
+      console.log(`Created public bucket: ${config.PUBLIC_BUCKET}`);
+
+      await minioClient.setBucketPolicy(
+        config.PUBLIC_BUCKET,
+        JSON.stringify(publicReadPolicy(config.PUBLIC_BUCKET))
+      );
+      console.log(`Bucket ${config.PUBLIC_BUCKET} is now publicly readable`);
+    }
+
+    console.log('MinIO buckets initialized successfully');
   } catch (err) {
-    console.error('MinIO bucket check error:', err.message);
+    console.error('MinIO bucket setup error:', err.message);
   }
-})();
+}

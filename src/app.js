@@ -18,7 +18,7 @@ app.use(morgan("combined", { stream }));
 app.use("/api/v1", routes);
 
 app.get("/", (req, res) => {
-  res.json({ status: "ok", message: "Service template is up" });
+  res.json({ status: "ok", message: "File service is up" });
 });
 
 app.use(errorHandler);
