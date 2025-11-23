@@ -11,7 +11,7 @@ services:
       target: development
     container_name: anivoy-file-service
     ports:
-      - "6069:6069"
+      - "7900:7900"
     env_file:
       - .env
     depends_on:
