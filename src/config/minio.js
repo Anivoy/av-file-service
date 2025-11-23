@@ -29,29 +29,50 @@ const publicReadPolicy = (bucket) => ({
   ],
 });
 
-export async function initializeMinioBuckets() {
-  try {
-    console.log("Initializing MinIO buckets");
-    const privateExists = await minioClient.bucketExists(config.PRIVATE_BUCKET);
-    if (!privateExists) {
-      await minioClient.makeBucket(config.PRIVATE_BUCKET);
-      console.log(`Created private bucket: ${config.PRIVATE_BUCKET}`);
-    }
-
-    const publicExists = await minioClient.bucketExists(config.PUBLIC_BUCKET);
-    if (!publicExists) {
-      await minioClient.makeBucket(config.PUBLIC_BUCKET);
-      console.log(`Created public bucket: ${config.PUBLIC_BUCKET}`);
-
-      await minioClient.setBucketPolicy(
-        config.PUBLIC_BUCKET,
-        JSON.stringify(publicReadPolicy(config.PUBLIC_BUCKET))
+async function retry(fn, maxRetries = 30, delay = 5000) {
+  let attempt = 0;
+  while (attempt < maxRetries) {
+    try {
+      return await fn();
+    } catch (err) {
+      attempt++;
+      if (attempt >= maxRetries) {
+        console.error(`Max retry reached (${maxRetries}).`);
+        throw err;
+      }
+      console.warn(
+        `Initialization failed on attempt ${attempt}: ${err.message}. Retrying in ${delay}ms...`,
       );
-      console.log(`Bucket ${config.PUBLIC_BUCKET} is now publicly readable`);
+      await new Promise((res) => setTimeout(res, delay));
     }
-
-    console.log('MinIO buckets initialized successfully');
-  } catch (err) {
-    console.error('MinIO bucket setup error:', err.message);
   }
+}
+
+export async function initializeMinioBuckets() {
+  await retry(async () => {
+    try {
+      console.log('Initializing MinIO buckets');
+      const privateExists = await minioClient.bucketExists(config.PRIVATE_BUCKET);
+      if (!privateExists) {
+        await minioClient.makeBucket(config.PRIVATE_BUCKET);
+        console.log(`Created private bucket: ${config.PRIVATE_BUCKET}`);
+      }
+
+      const publicExists = await minioClient.bucketExists(config.PUBLIC_BUCKET);
+      if (!publicExists) {
+        await minioClient.makeBucket(config.PUBLIC_BUCKET);
+        console.log(`Created public bucket: ${config.PUBLIC_BUCKET}`);
+
+        await minioClient.setBucketPolicy(
+          config.PUBLIC_BUCKET,
+          JSON.stringify(publicReadPolicy(config.PUBLIC_BUCKET)),
+        );
+        console.log(`Bucket ${config.PUBLIC_BUCKET} is now publicly readable`);
+      }
+
+      console.log('MinIO buckets initialized successfully');
+    } catch (err) {
+      console.error('MinIO bucket setup error:', err.message);
+    }
+  });
 }

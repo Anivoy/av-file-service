@@ -31,7 +31,7 @@ COPY . /app/
 EXPOSE 7900
 
 # Command to serve for development
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]
 
 # ----------------------
 # Production Stage
@@ -48,4 +48,4 @@ COPY . /app/
 EXPOSE 7900
 
 # Command to serve for production
-CMD ["node", "server.js"]
+CMD ["npm", "start"]

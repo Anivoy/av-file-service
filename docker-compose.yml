@@ -14,8 +14,6 @@ services:
       - "7900:7900"
     env_file:
       - .env
-    depends_on:
-      - minio
     restart: unless-stopped
     networks:
       - anivoy-shared-net
@@ -40,3 +38,4 @@ services:
 
 volumes:
   minio-data:
+    external: true
